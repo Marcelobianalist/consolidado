@@ -2,9 +2,9 @@ import streamlit as st
 import openpyxl
 from io import BytesIO
 import traceback
-import os
+# import os  <-- Ya no es necesario
 from copy import copy
-from openpyxl.cell.cell import MergedCell # Importante para la detección
+from openpyxl.cell.cell import MergedCell
 
 st.set_page_config(page_title="Consolidador Robusto", layout="wide")
 st.title("Consolidador REM (Método Seguro)")
@@ -53,7 +53,6 @@ if uploaded_files:
                 # --- PASO 1: Sumar todos los datos numéricos ---
                 sumas_consolidadas = {}
                 progress_bar = st.progress(0, text="Paso 1/3: Sumando datos de los archivos...")
-                # ... (El código de suma no cambia y es correcto)
                 for i, data_file in enumerate(uploaded_files):
                     data_file.seek(0)
                     wb_data = openpyxl.load_workbook(data_file, data_only=True)
@@ -79,22 +78,13 @@ if uploaded_files:
                 for i, hoja_nombre in enumerate(wb_template.sheetnames):
                     source_ws = wb_template[hoja_nombre]
                     target_ws = wb_final.create_sheet(title=hoja_nombre)
-                    
-                    # Primero, copiar la estructura (incluidas las celdas combinadas)
                     copy_sheet_properties(source_ws, target_ws)
-
-                    # Segundo, copiar el contenido y estilo de cada celda individual
                     for fila in source_ws.iter_rows():
                         for celda in fila:
-                            # --- LA CORRECCIÓN CLAVE ESTÁ AQUÍ ---
-                            # Si la celda es un marcador de posición de una celda combinada, la omitimos.
-                            # La estructura ya fue creada por 'merge_cells'
                             if isinstance(celda, MergedCell):
                                 continue
-                            
                             new_cell = target_ws.cell(row=celda.row, column=celda.column)
                             copy_cell(celda, new_cell)
-                    
                     progress_bar.progress((i + 1) / len(wb_template.sheetnames), text=f"Paso 2/3: Copiando hoja '{hoja_nombre}'...")
 
                 # --- PASO 3: Escribir los datos sumados ---
@@ -114,8 +104,8 @@ if uploaded_files:
                 wb_final.save(output)
                 output.seek(0)
                 
-                base_name = os.path.splitext(template_file.name)[0]
-                final_filename = f"consolidado_seguro_{base_name}.xlsx"
+                # --- MODIFICACIÓN: Nombre de archivo fijo ---
+                final_filename = "Rem_consolidados.xlsx"
                 
                 st.session_state.processed_file = output
                 st.session_state.file_name = final_filename
@@ -130,7 +120,7 @@ if uploaded_files:
 if st.session_state.processed_file is not None:
     st.success("✅ ¡Consolidación completada! El archivo reconstruido está listo.")
     st.download_button(
-        label="📥 Descargar archivo consolidado (.xlsx)",
+        label="📥 Descargar archivo consolidado",
         data=st.session_state.processed_file,
         file_name=st.session_state.file_name,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
