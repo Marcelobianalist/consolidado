@@ -12,7 +12,7 @@ st.title("Consolidador REM (Método Seguro)")
 st.warning(
     "**Importante:** Este método reconstruye el archivo final desde cero para máxima compatibilidad. "
     "Se copiarán valores, formatos, anchos/altos de celda y celdas combinadas. **Gráficos, imágenes y tablas dinámicas no serán transferidos.**"
-    "**Máximo 1GB de archivos a consolidar**"
+    "(**Máximo 1GB de archivos a consolidar**)"
 )
 
 # --- Funciones de Ayuda para Copiar ---
