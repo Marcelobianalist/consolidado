@@ -6,7 +6,7 @@ import traceback
 from copy import copy
 from openpyxl.cell.cell import MergedCell
 
-st.set_page_config(page_title="Consolidador Robusto", layout="wide")
+st.set_page_config(page_title="Consolidador Rem", layout="wide")
 st.title("Consolidador REM (Método Seguro)")
 
 st.warning(
