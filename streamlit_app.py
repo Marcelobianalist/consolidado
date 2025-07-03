@@ -34,6 +34,24 @@ def copy_cell(source_cell, target_cell):
         target_cell.protection = copy(source_cell.protection)
         target_cell.alignment = copy(source_cell.alignment)
 
+# --- NUEVA FUNCIÓN PARA CORREGIR BORDES ---
+def apply_merged_cell_styles(source_ws, target_ws):
+    """
+    Aplica el estilo de la celda principal de un área combinada a todas las celdas
+    dentro de esa área para asegurar que los bordes y rellenos sean uniformes.
+    """
+    for merged_range in source_ws.merged_cells.ranges:
+        # Obtener la celda principal (top-left) de la plantilla
+        top_left_cell = source_ws.cell(row=merged_range.min_row, column=merged_range.min_col)
+        
+        # Iterar a través de todas las celdas en el rango combinado en la hoja de destino
+        for row in range(merged_range.min_row, merged_range.max_row + 1):
+            for col in range(merged_range.min_col, merged_range.max_col + 1):
+                cell_to_style = target_ws.cell(row=row, column=col)
+                # Aplicar el estilo de la celda principal
+                cell_to_style.style = copy(top_left_cell.style)
+
+
 # --- Interfaz de Streamlit ---
 st.header("1. Sube tu Archivo de Plantilla")
 template_file = st.file_uploader(
@@ -60,10 +78,11 @@ if st.button("✨ Consolidar Archivos"):
     else:
         with st.spinner("Iniciando proceso..."):
             try:
-                # PASO 1: Sumar los datos de los archivos de datos
+                # PASO 1: Sumar los datos
                 sumas_consolidadas = {}
                 progress_bar = st.progress(0, text="Paso 1/3: Sumando datos...")
                 for i, data_file in enumerate(data_files):
+                    # ... (código de suma sin cambios)
                     data_file.seek(0)
                     wb_data = openpyxl.load_workbook(data_file, data_only=True)
                     for hoja_nombre in wb_data.sheetnames:
@@ -77,7 +96,7 @@ if st.button("✨ Consolidar Archivos"):
                                     sumas_consolidadas[hoja_nombre][ref] = sumas_consolidadas[hoja_nombre].get(ref, 0) + celda.value
                     progress_bar.progress((i + 1) / len(data_files), text=f"Paso 1/3: Leyendo {data_file.name}")
 
-                # PASO 2: Reconstruir la plantilla en un nuevo libro de trabajo
+                # PASO 2: Reconstruir la plantilla
                 progress_bar.progress(0, text="Paso 2/3: Reconstruyendo la plantilla...")
                 template_file.seek(0)
                 wb_template = openpyxl.load_workbook(template_file)
@@ -87,17 +106,28 @@ if st.button("✨ Consolidar Archivos"):
                 for i, hoja_nombre in enumerate(wb_template.sheetnames):
                     source_ws = wb_template[hoja_nombre]
                     target_ws = wb_final.create_sheet(title=hoja_nombre)
+                    
+                    # 1. Copiar propiedades (incluye la ESTRUCTURA de celdas combinadas)
                     copy_sheet_properties(source_ws, target_ws)
+                    
+                    # 2. **LLAMADA A LA NUEVA FUNCIÓN DE CORRECCIÓN**
+                    #    Asegura que el ESTILO sea uniforme en las áreas combinadas
+                    apply_merged_cell_styles(source_ws, target_ws)
+
+                    # 3. Copiar valores y estilos de celdas no combinadas
                     for fila in source_ws.iter_rows():
                         for celda in fila:
                             if isinstance(celda, MergedCell):
-                                continue
+                                continue # Omitimos las celdas "hijas"
                             new_cell = target_ws.cell(row=celda.row, column=celda.column)
+                            # Copiamos la celda principal, que sobrescribirá el estilo si es necesario
                             copy_cell(celda, new_cell)
+                    
                     progress_bar.progress((i + 1) / len(wb_template.sheetnames), text=f"Paso 2/3: Copiando hoja '{hoja_nombre}'...")
 
-                # PASO 3: Escribir las sumas en el nuevo libro reconstruido
+                # PASO 3: Escribir las sumas
                 progress_bar.progress(0, text="Paso 3/3: Escribiendo valores consolidados...")
+                # ... (código de escritura sin cambios)
                 for hoja_nombre, celdas in sumas_consolidadas.items():
                     if hoja_nombre in wb_final.sheetnames:
                         ws_final = wb_final[hoja_nombre]
@@ -106,7 +136,9 @@ if st.button("✨ Consolidar Archivos"):
                                 ws_final[celda_ref].value = valor_sumado
                             except Exception: pass
                 
+                # PASO 4: Guardar
                 progress_bar.progress(1.0, text="Generando archivo final...")
+                # ... (código de guardado sin cambios)
                 output = BytesIO()
                 wb_final.save(output)
                 output.seek(0)
@@ -120,7 +152,7 @@ if st.button("✨ Consolidar Archivos"):
                 st.error(traceback.format_exc())
                 st.session_state.processed_file = None
 
-# Lógica de descarga
+# Lógica de descarga (sin cambios)
 if st.session_state.processed_file is not None:
     st.success("✅ ¡Consolidación completada!")
     st.download_button(
