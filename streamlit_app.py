@@ -6,7 +6,7 @@ from copy import copy
 from openpyxl.cell.cell import MergedCell
 
 st.set_page_config(page_title="Consolidador a XLSX", layout="wide")
-st.title("Consolidador REM (Método Anti-Corrupción)")
+st.title("Consolidador REM")
 
 st.warning(
     "**Importante:** Este método reconstruye el archivo final desde cero para garantizar que no esté dañado. "
